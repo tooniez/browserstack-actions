@@ -160,69 +160,20 @@ describe('Action Input operations for fetching all inputs, triggering validation
 
     it('Returns true if rerun was triggered by the GitHub App', async () => {
       const actionInput = new ActionInput();
-      sinon.stub(actionInput, 'identifyRunFromBStack').returns(Promise.resolve('validatedAppName'));
+      process.env.GITHUB_TRIGGERING_ACTOR = 'validatedAppName';
       const result = await actionInput.checkIfBStackReRun();
       // eslint-disable-next-line no-unused-expressions
       expect(result).to.be.true;
+      delete process.env.GITHUB_TRIGGERING_ACTOR;
     });
 
     it('Returns false if rerun was not triggered by the GitHub App', async () => {
       const actionInput = new ActionInput();
-      sinon.stub(actionInput, 'identifyRunFromBStack').returns(Promise.resolve('otherActor'));
+      process.env.GITHUB_TRIGGERING_ACTOR = 'otherActor';
       const result = await actionInput.checkIfBStackReRun();
       // eslint-disable-next-line no-unused-expressions
       expect(result).to.be.false;
-    });
-  });
-
-  context('Identify Run From BrowserStack', () => {
-    let axiosGetStub;
-    let stubbedInput;
-
-    beforeEach(() => {
-      stubbedInput = sinon.stub(core, 'getInput');
-      sinon.stub(InputValidator, 'updateUsername').returns('validatedUsername');
-      sinon.stub(InputValidator, 'validateBuildName').returns('validatedBuildName');
-      sinon.stub(InputValidator, 'validateProjectName').returns('validatedProjectName');
-      sinon.stub(InputValidator, 'validateGithubAppName').returns('validatedAppName');
-      sinon.stub(InputValidator, 'validateGithubToken').returns('validatedToken');
-
-      // Provide required inputs
-      stubbedInput.withArgs(INPUT.USERNAME, { required: true }).returns('someUsername');
-      stubbedInput.withArgs(INPUT.ACCESS_KEY, { required: true }).returns('someAccessKey');
-
-      process.env.GITHUB_REPOSITORY = 'browserstack/github-actions';
-      process.env.GITHUB_RUN_ID = '12345';
-      process.env.GITHUB_RUN_ATTEMPT = '2';
-
-      // Stub the axios.get method
-      axiosGetStub = sinon.stub(axios, 'get');
-      // Stub core.info to prevent it from throwing an error
-      sinon.stub(core, 'info');
-    });
-
-    afterEach(() => {
-      sinon.restore();
-    });
-
-    it('Returns the triggering actor from the GitHub API', async () => {
-      const actionInput = new ActionInput();
-      axiosGetStub.resolves({
-        data: {
-          triggering_actor: { login: 'someActor' },
-        },
-      });
-      const result = await actionInput.identifyRunFromBStack();
-      expect(result).to.eq('someActor');
-    });
-
-    it('Handles errors and returns undefined when GitHub API fails', async () => {
-      const actionInput = new ActionInput();
-      axiosGetStub.rejects(new Error('API failed'));
-      const result = await actionInput.identifyRunFromBStack();
-      // eslint-disable-next-line no-unused-expressions
-      expect(result).to.be.undefined;
-      sinon.assert.calledOnce(core.info);
+      delete process.env.GITHUB_TRIGGERING_ACTOR;
     });
   });
 

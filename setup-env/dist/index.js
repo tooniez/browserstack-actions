@@ -34647,25 +34647,9 @@ class ActionInput {
       return false;
     }
 
-    const triggeringActor = await this.identifyRunFromBStack();
+    const triggeringActor = process.env.GITHUB_TRIGGERING_ACTOR;
     core.info(`Triggering actor is - ${triggeringActor}`);
     return triggeringActor === this.githubApp;
-  }
-
-  async identifyRunFromBStack() {
-    try {
-      const runDetailsUrl = `https://api.github.com/repos/${this.repository}/actions/runs/${this.runId}`;
-      const runDetailsResponse = await axios.get(runDetailsUrl, {
-        headers: {
-          Authorization: `token ${this.githubToken}`,
-          Accept: 'application/vnd.github.v3+json',
-        },
-      });
-
-      return runDetailsResponse.data.triggering_actor?.login;
-    } catch (error) {
-      core.info(`Error getting run details to identify actor of the build: ${error.message}`);
-    }
   }
 
   async setBStackRerunEnvVars() {

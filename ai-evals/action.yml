@@ -1,0 +1,45 @@
+name: 'BrowserStack AI Evals'
+description: 'Run AI evaluation experiments, compare scores against the previous baseline, and report pass/regression status with a PR comment and Job Summary.'
+author: 'BrowserStack'
+branding:
+  icon: 'check-circle'
+  color: 'green'
+
+inputs:
+  experiment:
+    description: 'Name of an Experiment in BrowserStack AI Evals to run. The Action triggers the experiment (prompt + dataset + evaluators + thresholds configured in the UI) and waits for results.'
+    required: true
+
+  public-key:
+    description: 'BrowserStack AI Evals public API key. Falls back to the AISDK_PUBLIC_KEY environment variable when omitted.'
+    required: false
+    default: ''
+
+  secret-key:
+    description: 'BrowserStack AI Evals secret API key. Falls back to the AISDK_SECRET_KEY environment variable when omitted.'
+    required: false
+    default: ''
+
+  github-token:
+    description: 'Token used to post the sticky PR comment. Defaults to the workflow GITHUB_TOKEN; override only if you need to post as a different identity (e.g., a GitHub App).'
+    required: false
+    default: ${{ github.token }}
+
+  fail-on-regression:
+    description: 'Exit with a non-zero code if any evaluator breaches its threshold. Set to "false" to report without blocking the PR.'
+    required: false
+    default: 'true'
+
+  comment-on-pr:
+    description: 'When running on a pull_request event, post (or edit) a sticky summary comment on the PR. Set to "false" to disable.'
+    required: false
+    default: 'true'
+
+  timeout:
+    description: 'Maximum time (in seconds) to wait for the experiment run to complete and its comparison scores to be ready. Applies to both lifecycle polling and score aggregation polling. Default is 900 (15 minutes).'
+    required: false
+    default: '900'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

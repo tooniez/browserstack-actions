@@ -1,0 +1,22 @@
+{
+  "name": "@browserstack/ai-evals",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GitHub Action that runs TestOps evals and posts PR comments.",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "esbuild --platform=node --bundle src/main.ts --outfile=dist/index.js --minify --sourcemap --target=es2020",
+    "check": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "@actions/core": "^1.10.1",
+    "@actions/github": "^6.0.0",
+    "@browserstack/ai-sdk": "1.0.0-beta.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.4.5"
+  }
+}

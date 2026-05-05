@@ -22,5 +22,5 @@ inputs:
     required: false
     default: 'browserstack-integrations[bot]'
 runs:
-  using: 'node20'
+  using: 'node24'
   main: 'dist/index.js'

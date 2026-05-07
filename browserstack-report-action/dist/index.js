@@ -51117,7 +51117,8 @@ const HTML_SANITIZE_OPTIONS = {
     img: ['src', 'alt', 'title', 'width', 'height'],
     a: ['href', 'name', 'target', 'rel'],
   },
-  allowedSchemes: ['http', 'https', 'data', 'mailto'],
+  allowedSchemes: ['http', 'https', 'mailto'],
+  allowedSchemesByTag: { img: ['http', 'https', 'data'] },
   allowedSchemesAppliedToAttributes: ['href', 'src'],
   // Belt-and-braces: drop any inline event handlers and javascript: URLs
   // even if they slip past tag/attribute filters.

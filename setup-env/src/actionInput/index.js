@@ -2,7 +2,7 @@ const core = require('@actions/core');
 const axios = require('axios');
 const InputValidator = require('./inputValidator');
 const constants = require('../../config/constants');
-const { BROWSERSTACK_INTEGRATIONS } = require("../../config/constants");
+const { BROWSERSTACK_INTEGRATIONS, ALLOWED_RERUN_ENV_VARS } = require("../../config/constants");
 
 const {
   INPUT,
@@ -115,8 +115,17 @@ class ActionInput {
       });
       const variables = bsApiResponse?.data?.data?.variables;
       if (variables && typeof variables === 'object') {
+        // Security (APS-19076): only export env vars whose names are on the
+        // allowlist. The BrowserStack rerun API response is treated as
+        // attacker-influenced; without this filter, the API could inject
+        // arbitrary env vars into the runner (e.g. NODE_OPTIONS, PATH,
+        // GITHUB_TOKEN overrides) leading to RCE / token exfiltration.
         Object.keys(variables).forEach((key) => {
-          core.exportVariable(key, variables[key]);
+          if (ALLOWED_RERUN_ENV_VARS.includes(key)) {
+            core.exportVariable(key, variables[key]);
+          } else {
+            core.warning(`Ignoring non-allowlisted env var from BrowserStack rerun API: ${key}`);
+          }
         });
       }
     } catch (error) {

@@ -24,6 +24,17 @@ module.exports = {
   BROWSERSTACK_INTEGRATIONS: {
     DETAILS_API_URL: 'https://integrate.browserstack.com/api/ci-tools/v1/builds/{runId}/rebuild/details?tool=github-actions&as_bot=true',
   },
+
+  // Security (APS-19076): allowlist of env-var names accepted from the
+  // BrowserStack rerun API response. Without this filter, the unbounded
+  // Object.keys(...).forEach(core.exportVariable, ...) call let any caller
+  // who could influence the API response inject arbitrary env vars into
+  // the workflow runner (CVSS 9.3 - env-var injection).
+  ALLOWED_RERUN_ENV_VARS: [
+    'BROWSERSTACK_RERUN',
+    'BROWSERSTACK_RERUN_TESTS',
+    'BROWSERSTACK_BUILD_NAME',
+  ],
 };
 
 
@@ -34558,7 +34569,7 @@ const core = __nccwpck_require__(7484);
 const axios = __nccwpck_require__(7269);
 const InputValidator = __nccwpck_require__(3000);
 const constants = __nccwpck_require__(9350);
-const { BROWSERSTACK_INTEGRATIONS } = __nccwpck_require__(9350);
+const { BROWSERSTACK_INTEGRATIONS, ALLOWED_RERUN_ENV_VARS } = __nccwpck_require__(9350);
 
 const {
   INPUT,
@@ -34671,8 +34682,17 @@ class ActionInput {
       });
       const variables = bsApiResponse?.data?.data?.variables;
       if (variables && typeof variables === 'object') {
+        // Security (APS-19076): only export env vars whose names are on the
+        // allowlist. The BrowserStack rerun API response is treated as
+        // attacker-influenced; without this filter, the API could inject
+        // arbitrary env vars into the runner (e.g. NODE_OPTIONS, PATH,
+        // GITHUB_TOKEN overrides) leading to RCE / token exfiltration.
         Object.keys(variables).forEach((key) => {
-          core.exportVariable(key, variables[key]);
+          if (ALLOWED_RERUN_ENV_VARS.includes(key)) {
+            core.exportVariable(key, variables[key]);
+          } else {
+            core.warning(`Ignoring non-allowlisted env var from BrowserStack rerun API: ${key}`);
+          }
         });
       }
     } catch (error) {

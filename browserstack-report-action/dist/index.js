@@ -51127,13 +51127,17 @@ const HTML_SANITIZE_OPTIONS = {
 };
 
 // CSS sanitizer: strip JS-execution hooks (expression(), url(javascript:...))
-// from the rich-CSS payload before embedding into <style>.
+// from the rich-CSS payload before embedding into <style>. HTML tags are
+// stripped via sanitize-html (allowedTags: []) rather than a regex — a
+// regex replace is single-pass and bypassable by nested patterns like
+// `<scr<script>ipt>`, which CodeQL flags as "incomplete multi-character
+// sanitization". sanitize-html iterates internally and is safe.
 function sanitizeCss(css) {
   if (!css || typeof css !== 'string') return '';
-  return css
+  const stripped = sanitizeHtml(css, { allowedTags: [], allowedAttributes: {} });
+  return stripped
     .replace(/expression\s*\([^)]*\)/gi, '')
-    .replace(/url\s*\(\s*['"]?\s*javascript:[^)]*\)/gi, '')
-    .replace(/<\/?(script|iframe|object|embed)[^>]*>/gi, '');
+    .replace(/url\s*\(\s*['"]?\s*javascript:[^)]*\)/gi, '');
 }
 
 class ReportProcessor {

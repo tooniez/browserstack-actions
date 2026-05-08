@@ -18,4 +18,15 @@ module.exports = {
   BROWSERSTACK_INTEGRATIONS: {
     DETAILS_API_URL: 'https://integrate.browserstack.com/api/ci-tools/v1/builds/{runId}/rebuild/details?tool=github-actions&as_bot=true',
   },
+
+  // Security (APS-19076): allowlist of env-var names accepted from the
+  // BrowserStack rerun API response. Without this filter, the unbounded
+  // Object.keys(...).forEach(core.exportVariable, ...) call let any caller
+  // who could influence the API response inject arbitrary env vars into
+  // the workflow runner (CVSS 9.3 - env-var injection).
+  ALLOWED_RERUN_ENV_VARS: [
+    'BROWSERSTACK_RERUN',
+    'BROWSERSTACK_RERUN_TESTS',
+    'BROWSERSTACK_BUILD_NAME',
+  ],
 };

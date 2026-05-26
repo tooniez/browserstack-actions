@@ -208,17 +208,49 @@ describe('Action Input operations for fetching all inputs, triggering validation
       sinon.restore();
     });
 
-    it('Sets environment variables from BrowserStack API response', async () => {
+    it('Sets environment variables from BrowserStack API response (allowlisted only)', async () => {
       const actionInput = new ActionInput();
-      const variables = { VAR1: 'value1', VAR2: 'value2' };
+      const variables = {
+        BROWSERSTACK_RERUN: 'true',
+        BROWSERSTACK_RERUN_TESTS: 'spec1.js,spec2.js',
+        BROWSERSTACK_BUILD_NAME: 'rerun-build-1',
+      };
       axiosGetStub.resolves({
         data: { data: { variables } },
       });
 
       await actionInput.setBStackRerunEnvVars();
 
-      sinon.assert.calledWith(core.exportVariable, 'VAR1', 'value1');
-      sinon.assert.calledWith(core.exportVariable, 'VAR2', 'value2');
+      sinon.assert.calledWith(core.exportVariable, 'BROWSERSTACK_RERUN', 'true');
+      sinon.assert.calledWith(core.exportVariable, 'BROWSERSTACK_RERUN_TESTS', 'spec1.js,spec2.js');
+      sinon.assert.calledWith(core.exportVariable, 'BROWSERSTACK_BUILD_NAME', 'rerun-build-1');
+    });
+
+    it('Rejects non-allowlisted env vars from BrowserStack API response (APS-19076)', async () => {
+      // Security regression: a malicious or compromised BrowserStack rerun
+      // API response must not be able to inject arbitrary env vars into the
+      // workflow runner (e.g. NODE_OPTIONS, PATH, GITHUB_TOKEN overrides).
+      const coreWarningStub = sinon.stub(core, 'warning');
+      const actionInput = new ActionInput();
+      const variables = {
+        BROWSERSTACK_RERUN: 'true',
+        NODE_OPTIONS: '--require /tmp/evil.js',
+        PATH: '/tmp/evil:/usr/bin',
+        GITHUB_TOKEN: 'attacker-controlled',
+      };
+      axiosGetStub.resolves({
+        data: { data: { variables } },
+      });
+
+      await actionInput.setBStackRerunEnvVars();
+
+      sinon.assert.calledWith(core.exportVariable, 'BROWSERSTACK_RERUN', 'true');
+      sinon.assert.neverCalledWith(core.exportVariable, 'NODE_OPTIONS', sinon.match.any);
+      sinon.assert.neverCalledWith(core.exportVariable, 'PATH', sinon.match.any);
+      sinon.assert.neverCalledWith(core.exportVariable, 'GITHUB_TOKEN', sinon.match.any);
+      sinon.assert.calledWith(coreWarningStub, sinon.match(/NODE_OPTIONS/));
+      sinon.assert.calledWith(coreWarningStub, sinon.match(/PATH/));
+      sinon.assert.calledWith(coreWarningStub, sinon.match(/GITHUB_TOKEN/));
     });
 
     it('Handles errors when BrowserStack API fails', async () => {
